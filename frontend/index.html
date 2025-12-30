@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Talkio</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+  </head>
+
+  <body>
+    <!-- Authentication Modal (shown if not logged in) -->
+    <div class="auth-modal" id="authModal">
+      <div class="auth-container">
+        <h2 class="auth-title">Welcome to Talkio</h2>
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-tab="login">Login</button>
+          <button class="auth-tab" data-tab="signup">Sign Up</button>
+        </div>
+        
+        <form class="auth-form" id="loginForm">
+          <input
+            type="text"
+            class="auth-input"
+            id="loginEmailOrUsername"
+            placeholder="Email or Username"
+            required
+            autocomplete="username"
+          />
+          <input
+            type="password"
+            class="auth-input"
+            id="loginPassword"
+            placeholder="Password"
+            required
+            autocomplete="current-password"
+          />
+          <button type="submit" class="auth-button">Login</button>
+        </form>
+        
+        <form class="auth-form" id="signupForm" style="display: none;">
+          <input
+            type="text"
+            class="auth-input"
+            id="signupUsername"
+            placeholder="Username (3-30 characters)"
+            required
+            autocomplete="username"
+            minlength="3"
+            maxlength="30"
+          />
+          <input
+            type="email"
+            class="auth-input"
+            id="signupEmail"
+            placeholder="Email"
+            required
+            autocomplete="email"
+          />
+          <input
+            type="password"
+            class="auth-input"
+            id="signupPassword"
+            placeholder="Password (min 6 characters)"
+            required
+            autocomplete="new-password"
+            minlength="6"
+          />
+          <button type="submit" class="auth-button">Sign Up</button>
+        </form>
+        <div class="auth-error" id="authError"></div>
+      </div>
+    </div>
+
+    <div class="app-container" id="appContainer" style="display: none;">
+      <!-- Sidebar for Groups -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <h2 class="sidebar-title">Talkio</h2>
+          <button class="create-group-btn" id="createGroupBtn" title="Create Group">
+            <span>+</span>
+          </button>
+        </div>
+        
+        <div class="groups-list" id="groupsList">
+          <!-- Groups will be inserted here -->
+        </div>
+      </aside>
+
+      <!-- Main Chat Container -->
+      <div class="chat-container">
+        <!-- Header -->
+        <header class="chat-header">
+          <div class="header-left">
+            <h1 class="app-title" id="currentGroupTitle">General</h1>
+            <div class="user-info" id="userInfo" style="display: none;">
+              <span class="user-name" id="userName"></span>
+              <button class="logout-btn" id="logoutBtn" title="Logout">Logout</button>
+            </div>
+            <div class="guest-banner" id="guestBanner" style="display: none;">
+              <span>Read-only / Login required</span>
+            </div>
+          </div>
+          <div class="online-users">
+            <span class="online-indicator"></span>
+            <span class="online-count" id="onlineCount">0</span>
+            <span class="online-text">online</span>
+          </div>
+        </header>
+
+        <!-- Scrollable Message Area -->
+        <div class="chat-messages" id="chatMessages">
+          <!-- Messages will be inserted here -->
+        </div>
+
+        <!-- Typing Indicator -->
+        <div class="typing-indicator" id="typingIndicator">
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-text" id="typingText"></span>
+        </div>
+
+        <!-- Sticky Input Bar -->
+        <div class="chat-input-container">
+          <form class="chat-form" id="chatForm">
+            <input
+              type="text"
+              class="chat-input"
+              id="messageInput"
+              placeholder="Type your message here..."
+              autocomplete="off"
+            />
+            <button type="submit" class="send-button" id="sendButton" disabled>
+              Send
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create Group Modal -->
+    <div class="modal-overlay" id="createGroupModal" style="display: none;">
+      <div class="modal-content">
+        <h3>Create New Group</h3>
+        <form id="createGroupForm">
+          <input
+            type="text"
+            class="modal-input"
+            id="newGroupName"
+            placeholder="Group name"
+            required
+            maxlength="50"
+          />
+          <div class="modal-buttons">
+            <button type="button" class="modal-button cancel" id="cancelCreateGroup">Cancel</button>
+            <button type="submit" class="modal-button primary">Create</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
