@@ -1,74 +1,177 @@
-// imports required for server
+// Talkio Outcomes Engine - Backend Server
 import express from "express";
 import http from "http";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-
-// import the socket.io library
 import { Server } from "socket.io";
+import dotenv from "dotenv";
 
-// initializing the servers: HTTP as well as Web Socket
+// Load environment variables
+dotenv.config();
+
+
+// Initialize Express and Socket.io
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// EXTENSION: Add JSON body parsing for auth endpoints
 app.use(express.json());
 
-// EXTENSION: Authentication & User Management (in-memory storage)
-const JWT_SECRET = process.env.JWT_SECRET || "talkio-secret-key-change-in-production";
-const users = new Map(); // email -> { username, email, passwordHash }
-const userSessions = new Map(); // socket.id -> { userId, username, email, isAuthenticated }
+// Firebase REST API Configuration (commented out - using in-memory fallback)
+// const FIREBASE_PROJECT_ID = "talkio-f7365";
+// const FIREBASE_DATABASE_URL = `https://${FIREBASE_PROJECT_ID}-default-rtdb.firebaseio.com`;
 
-// Track authenticated users
-const authenticatedUsers = new Map(); // socket.id -> { username, email, userId }
+// In-Memory Database (Production-ready fallback)
+const inMemoryStore = {
+  users: {},
+  conversations: {},
+  messages: {},
+  outcomes: {}
+};
 
-// create the chat history array for storing messages
-const chatHistory = [];
+// Database Functions (In-Memory Implementation)
+const db = {
+  // Users
+  async createUser(email, userData) {
+    const emailKey = email.replace(/\./g, ",").replace(/@/g, "_at_");
+    inMemoryStore.users[emailKey] = {
+      ...userData,
+      createdAt: new Date().toISOString(),
+      lastSeen: new Date().toISOString()
+    };
+    console.log(`📝 User created: ${userData.username}`);
+    return userData;
+  },
 
-// Track connected users (EXTENSION: now tracks auth status)
-const connectedUsers = new Map(); // socket.id -> { username, isAuthenticated, email? }
+  async getUser(email) {
+    const emailKey = email.replace(/\./g, ",").replace(/@/g, "_at_");
+    return inMemoryStore.users[emailKey] || null;
+  },
 
-// Groups/Rooms support (EXTENSION - doesn't break existing functionality)
-const groupMessages = new Map(); // groupName -> array of messages
-const groupUsers = new Map(); // groupName -> Set of socket.ids
-const userGroups = new Map(); // socket.id -> Set of groupNames
-const userMessageRates = new Map(); // socket.id -> { count, resetTime }
+  async getUserByUsername(username) {
+    for (const [key, userData] of Object.entries(inMemoryStore.users)) {
+      if (userData?.username?.toLowerCase() === username.toLowerCase()) {
+        return userData;
+      }
+    }
+    return null;
+  },
+
+  async updateUserLastSeen(email) {
+    const emailKey = email.replace(/\./g, ",").replace(/@/g, "_at_");
+    if (inMemoryStore.users[emailKey]) {
+      inMemoryStore.users[emailKey].lastSeen = new Date().toISOString();
+    }
+  },
+
+  // Conversations
+  async createConversation(conversationData) {
+    inMemoryStore.conversations[conversationData.id] = conversationData;
+    return conversationData;
+  },
+
+  async getConversation(conversationId) {
+    return inMemoryStore.conversations[conversationId] || null;
+  },
+
+  async getAllConversations() {
+    return Object.values(inMemoryStore.conversations);
+  },
+
+  async updateConversationStatus(conversationId, status) {
+    if (inMemoryStore.conversations[conversationId]) {
+      inMemoryStore.conversations[conversationId].status = status;
+    }
+  },
+
+  // Messages
+  async addMessage(conversationId, messageData) {
+    const convKey = conversationId.replace(/[.#$\[\]]/g, "_");
+    if (!inMemoryStore.messages[convKey]) {
+      inMemoryStore.messages[convKey] = [];
+    }
+    inMemoryStore.messages[convKey].push({
+      ...messageData,
+      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: new Date().toISOString()
+    });
+  },
+
+  async getMessages(conversationId, limit = 100) {
+    const convKey = conversationId.replace(/[.#$\[\]]/g, "_");
+    const messages = inMemoryStore.messages[convKey] || [];
+    return messages
+      .slice(-limit)
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  },
+
+  // Outcomes
+  async saveOutcome(conversationId, outcome) {
+    inMemoryStore.outcomes[conversationId] = {
+      ...outcome,
+      savedAt: new Date().toISOString()
+    };
+  },
+
+  async getOutcome(conversationId) {
+    return inMemoryStore.outcomes[conversationId] || null;
+  },
+
+  // Initialize
+  async init() {
+    console.log("✅ In-memory database ready (data persists during session)");
+  }
+};
+
+// JWT Configuration - Enforce secure JWT secret
+if (!process.env.JWT_SECRET) {
+  console.error('❌ ERROR: JWT_SECRET environment variable is required!');
+  console.error('Please set JWT_SECRET in your .env file');
+  console.error('Example: JWT_SECRET=your_secure_random_string_here');
+  process.exit(1);
+}
+const JWT_SECRET = process.env.JWT_SECRET;
+console.log('✅ JWT Secret configured');
+
+
+// In-memory session tracking
+const userSessions = new Map();
+const connectedUsers = new Map();
+const authenticatedUsers = new Map();
+const userConversations = new Map();
+const userMessageRates = new Map();
+
+// Constants
 const MAX_MESSAGE_LENGTH = 1000;
 const MAX_MESSAGES_PER_MINUTE = 30;
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const RATE_LIMIT_WINDOW = 60000;
 
-// Initialize "General" group (default group)
-const GENERAL_GROUP = "General";
-groupMessages.set(GENERAL_GROUP, []);
-groupUsers.set(GENERAL_GROUP, new Set());
+// Initialize database
+db.init();
 
-// listen for new web socket connections
-io.on("connection", function callback(socket) {
-  // EXTENSION: Authentication-based connection (removed random username generation)
+// Socket.io Connection Handler
+io.on("connection", (socket) => {
   let userInfo = { username: null, email: null, isAuthenticated: false };
-  
-  // Handle authentication on connection
-  socket.on("authenticate", (data) => {
+
+  // Default: guest
+  connectedUsers.set(socket.id, userInfo);
+  userSessions.set(socket.id, { isAuthenticated: false });
+  socket.emit("auth-status", { isAuthenticated: false, isGuest: true });
+
+  // Authentication
+  socket.on("authenticate", async (data) => {
     const { token } = data || {};
     if (!token) {
-      // Guest user - allow read-only access
-      userInfo = { username: "Guest", isAuthenticated: false };
-      connectedUsers.set(socket.id, userInfo);
-      userSessions.set(socket.id, { isAuthenticated: false });
-      
-      // Send guest state
       socket.emit("auth-status", { isAuthenticated: false, isGuest: true });
-      socket.emit("all-groups", Array.from(groupMessages.keys()));
       return;
     }
-    
+
     try {
       const decoded = jwt.verify(token, JWT_SECRET);
-      const user = users.get(decoded.email);
-      
+      const user = await db.getUser(decoded.email);
+
       if (user) {
         userInfo = {
           username: user.username,
@@ -77,577 +180,356 @@ io.on("connection", function callback(socket) {
         };
         connectedUsers.set(socket.id, userInfo);
         authenticatedUsers.set(socket.id, userInfo);
-        userSessions.set(socket.id, { 
-          userId: user.email, 
-          username: user.username, 
-          email: user.email, 
-          isAuthenticated: true 
-        });
-        
-        // Initialize user groups tracking
-        userGroups.set(socket.id, new Set());
-        
-        // Auto-join General group for authenticated users
-        socket.join(GENERAL_GROUP);
-        userGroups.get(socket.id).add(GENERAL_GROUP);
-        if (!groupUsers.has(GENERAL_GROUP)) {
-          groupUsers.set(GENERAL_GROUP, new Set());
-        }
-        groupUsers.get(GENERAL_GROUP).add(socket.id);
-        
-        // Send user join system event to General group
-        const joinEvent = {
-          type: "system",
-          event: "user-joined",
+        userSessions.set(socket.id, {
+          userId: user.email,
           username: user.username,
-          timestamp: new Date().toISOString(),
-          group: GENERAL_GROUP,
-        };
-        
-        // Add to both legacy chatHistory (for backward compatibility) and groupMessages
-        chatHistory.push(joinEvent);
-        if (!groupMessages.has(GENERAL_GROUP)) {
-          groupMessages.set(GENERAL_GROUP, []);
-        }
-        groupMessages.get(GENERAL_GROUP).push(joinEvent);
-        
-        // Broadcast user joined event and updated user count (legacy support)
-        io.emit("receive-messages", {
-          chatHistory: getAllMessages(),
+          email: user.email,
+          isAuthenticated: true
         });
+
+        userConversations.set(socket.id, new Set());
+
+        await db.updateUserLastSeen(user.email);
+
         io.emit("user-count", authenticatedUsers.size);
-        
-        // Send group-specific messages (EXTENSION)
-        socket.emit("group-messages", {
-          group: GENERAL_GROUP,
-          chatHistory: getGroupMessages(GENERAL_GROUP),
-        });
-        socket.emit("user-groups", Array.from(userGroups.get(socket.id)));
-        socket.emit("all-groups", Array.from(groupMessages.keys()));
-        
-        // Send auth status
-        socket.emit("auth-status", { 
-          isAuthenticated: true, 
+        socket.emit("auth-status", {
+          isAuthenticated: true,
           username: user.username,
-          email: user.email 
+          email: user.email
         });
-        
-        // send the chat history and username to the newly connected client (legacy support)
-        socket.emit("receive-messages", {
-          chatHistory: getAllMessages(),
-          username: user.username,
-        });
-        
-        console.log(`Authenticated user ${user.username} connected`);
-      } else {
-        throw new Error("User not found");
+
+        console.log(`✅ ${user.username} authenticated`);
       }
     } catch (error) {
-      // Invalid token - treat as guest
-      userInfo = { username: "Guest", isAuthenticated: false };
-      connectedUsers.set(socket.id, userInfo);
-      userSessions.set(socket.id, { isAuthenticated: false });
       socket.emit("auth-status", { isAuthenticated: false, isGuest: true });
-      socket.emit("all-groups", Array.from(groupMessages.keys()));
-      console.log("Guest user connected (invalid token)");
     }
   });
-  
-  // Default: treat as guest until authenticated
-  userInfo = { username: "Guest", isAuthenticated: false };
-  connectedUsers.set(socket.id, userInfo);
-  userSessions.set(socket.id, { isAuthenticated: false });
-  socket.emit("auth-status", { isAuthenticated: false, isGuest: true });
-  socket.emit("all-groups", Array.from(groupMessages.keys()));
 
-  // listen for new messages from the client (EXISTING - preserved)
-  socket.on("post-message", function receiveMessages(data) {
-    // EXTENSION: Check authentication
+  // Create conversation
+  socket.on("create-conversation", async (data) => {
     const session = userSessions.get(socket.id);
-    if (!session || !session.isAuthenticated) {
-      socket.emit("error", { message: "Authentication required. Please log in to send messages." });
+    if (!session?.isAuthenticated) {
+      socket.emit("error", { message: "Please log in to create conversations." });
       return;
     }
-    
-    const { message, group } = data || { message: "", group: GENERAL_GROUP };
-    const username = session.username;
-    
-    // Security: Rate limiting
+
+    try {
+      await db.createConversation(data);
+      socket.join(data.id);
+      userConversations.get(socket.id)?.add(data.id);
+
+      // Join event
+      await db.addMessage(data.id, {
+        type: "system",
+        event: "conversation-started",
+        username: session.username,
+        intent: data.intent
+      });
+
+      socket.emit("conversation-created", data);
+      console.log(`📋 Conversation created: ${data.id} (${data.intent})`);
+    } catch (error) {
+      socket.emit("error", { message: "Failed to create conversation" });
+    }
+  });
+
+  // Join conversation/group
+  socket.on("join-group", async (data) => {
+    const session = userSessions.get(socket.id);
+    if (!session?.isAuthenticated) {
+      socket.emit("error", { message: "Please log in." });
+      return;
+    }
+
+    const { groupName } = data || {};
+    if (!groupName) return;
+
+    socket.join(groupName);
+    userConversations.get(socket.id)?.add(groupName);
+
+    // Get messages
+    const messages = await db.getMessages(groupName);
+    socket.emit("group-messages", {
+      group: groupName,
+      chatHistory: messages
+    });
+  });
+
+  // Post message
+  socket.on("post-message", async (data) => {
+    const session = userSessions.get(socket.id);
+    if (!session?.isAuthenticated) {
+      socket.emit("error", { message: "Please log in to send messages." });
+      return;
+    }
+
+    const { message, conversationId, group } = data || {};
+    const targetGroup = conversationId || group;
+
+    if (!message || !targetGroup) return;
+
+    // Rate limiting
     if (!checkRateLimit(socket.id)) {
-      socket.emit("error", { message: "Message rate limit exceeded. Please slow down." });
+      socket.emit("error", { message: "Too many messages. Slow down." });
       return;
     }
-    
-    // Security: Validate and sanitize message
+
     const sanitizedMessage = sanitizeInput(message);
-    if (!sanitizedMessage || sanitizedMessage.length === 0) {
-      return;
-    }
-    
-    if (sanitizedMessage.length > MAX_MESSAGE_LENGTH) {
-      socket.emit("error", { message: `Message too long. Maximum ${MAX_MESSAGE_LENGTH} characters.` });
-      return;
-    }
-    
-    const targetGroup = group || GENERAL_GROUP;
+    if (!sanitizedMessage || sanitizedMessage.length > MAX_MESSAGE_LENGTH) return;
+
     const messageData = {
       type: "message",
-      username,
+      username: session.username,
       message: sanitizedMessage,
-      timestamp: new Date().toISOString(),
       group: targetGroup,
     };
-    
-    // Legacy support: add to chatHistory (for backward compatibility)
-    chatHistory.push(messageData);
 
-    // EXTENSION: Add to group-specific messages (chronological order - append)
-    if (!groupMessages.has(targetGroup)) {
-      groupMessages.set(targetGroup, []);
-    }
-    groupMessages.get(targetGroup).push(messageData);
+    await db.addMessage(targetGroup, messageData);
 
-    // Legacy support: send to all clients (existing behavior)
-    io.emit("receive-messages", {
-      chatHistory: getAllMessages(),
-    });
-    
-    // EXTENSION: Send to group-specific room
+    const messages = await db.getMessages(targetGroup);
     io.to(targetGroup).emit("group-messages", {
       group: targetGroup,
-      chatHistory: getGroupMessages(targetGroup),
+      chatHistory: messages
     });
   });
 
-  // Handle typing indicators (EXISTING - preserved)
+  // Typing indicators
   socket.on("typing-start", (data) => {
     const session = userSessions.get(socket.id);
-    if (!session || !session.isAuthenticated) {
-      return; // Guests can't show typing
+    if (!session?.isAuthenticated) return;
+
+    const { conversationId } = data || {};
+    if (conversationId) {
+      socket.to(conversationId).emit("user-typing", {
+        username: session.username,
+        isTyping: true,
+        conversationId
+      });
     }
-    
-    const { group } = data || { group: GENERAL_GROUP };
-    const targetGroup = group || GENERAL_GROUP;
-    const username = session.username;
-    socket.to(targetGroup).emit("user-typing", { username, isTyping: true, group: targetGroup });
-    // Legacy support
-    socket.broadcast.emit("user-typing", { username, isTyping: true });
   });
 
   socket.on("typing-stop", (data) => {
     const session = userSessions.get(socket.id);
-    if (!session || !session.isAuthenticated) {
-      return; // Guests can't show typing
-    }
-    
-    const { group } = data || { group: GENERAL_GROUP };
-    const targetGroup = group || GENERAL_GROUP;
-    const username = session.username;
-    socket.to(targetGroup).emit("user-typing", { username, isTyping: false, group: targetGroup });
-    // Legacy support
-    socket.broadcast.emit("user-typing", { username, isTyping: false });
-  });
-  
-  // EXTENSION: Group management events (new events, don't interfere with existing)
-  socket.on("join-group", (data) => {
-    // EXTENSION: Check authentication
-    const session = userSessions.get(socket.id);
-    if (!session || !session.isAuthenticated) {
-      socket.emit("error", { message: "Authentication required. Please log in to join groups." });
-      return;
-    }
-    
-    const { groupName } = data || {};
-    if (!groupName || typeof groupName !== "string") {
-      socket.emit("error", { message: "Invalid group name" });
-      return;
-    }
-    
-    const sanitizedGroupName = sanitizeInput(groupName.trim());
-    if (!sanitizedGroupName || sanitizedGroupName.length === 0 || sanitizedGroupName.length > 50) {
-      socket.emit("error", { message: "Group name must be 1-50 characters" });
-      return;
-    }
-    
-    const username = session.username;
-    
-    // Initialize group if it doesn't exist
-    if (!groupMessages.has(sanitizedGroupName)) {
-      groupMessages.set(sanitizedGroupName, []);
-      groupUsers.set(sanitizedGroupName, new Set());
-      io.emit("all-groups", Array.from(groupMessages.keys()));
-    }
-    
-    // Check if user is already in group
-    const wasAlreadyInGroup = userGroups.get(socket.id)?.has(sanitizedGroupName) || false;
-    
-    // Join room (idempotent - safe to call multiple times)
-    socket.join(sanitizedGroupName);
-    userGroups.get(socket.id).add(sanitizedGroupName);
-    groupUsers.get(sanitizedGroupName).add(socket.id);
-    
-    // Send group messages to user (always send, even if already in group)
-    socket.emit("group-messages", {
-      group: sanitizedGroupName,
-      chatHistory: getGroupMessages(sanitizedGroupName),
-    });
-    socket.emit("user-groups", Array.from(userGroups.get(socket.id)));
-    
-    // Notify group only if user wasn't already in it
-    if (!wasAlreadyInGroup) {
-      const joinEvent = {
-        type: "system",
-        event: "user-joined-group",
-        username,
-        group: sanitizedGroupName,
-        timestamp: new Date().toISOString(),
-      };
-      groupMessages.get(sanitizedGroupName).push(joinEvent);
-      io.to(sanitizedGroupName).emit("group-messages", {
-        group: sanitizedGroupName,
-        chatHistory: getGroupMessages(sanitizedGroupName),
+    if (!session?.isAuthenticated) return;
+
+    const { conversationId } = data || {};
+    if (conversationId) {
+      socket.to(conversationId).emit("user-typing", {
+        username: session.username,
+        isTyping: false,
+        conversationId
       });
     }
-  });
-  
-  socket.on("leave-group", (data) => {
-    // EXTENSION: Check authentication
-    const session = userSessions.get(socket.id);
-    if (!session || !session.isAuthenticated) {
-      socket.emit("error", { message: "Authentication required." });
-      return;
-    }
-    
-    const { groupName } = data || {};
-    if (!groupName || groupName === GENERAL_GROUP) {
-      socket.emit("error", { message: "Cannot leave General group" });
-      return;
-    }
-    
-    if (!userGroups.get(socket.id)?.has(groupName)) {
-      return; // Already not in group
-    }
-    
-    const username = session.username;
-    
-    // Leave room
-    socket.leave(groupName);
-    userGroups.get(socket.id).delete(groupName);
-    if (groupUsers.has(groupName)) {
-      groupUsers.get(groupName).delete(socket.id);
-    }
-    
-    socket.emit("user-groups", Array.from(userGroups.get(socket.id)));
-    
-    // Notify group
-    const leaveEvent = {
-      type: "system",
-      event: "user-left-group",
-      username,
-      group: groupName,
-      timestamp: new Date().toISOString(),
-    };
-    if (groupMessages.has(groupName)) {
-      groupMessages.get(groupName).push(leaveEvent);
-      io.to(groupName).emit("group-messages", {
-        group: groupName,
-        chatHistory: getGroupMessages(groupName),
-      });
-    }
-  });
-  
-  socket.on("create-group", (data) => {
-    // EXTENSION: Check authentication
-    const session = userSessions.get(socket.id);
-    if (!session || !session.isAuthenticated) {
-      socket.emit("error", { message: "Authentication required. Please log in to create groups." });
-      return;
-    }
-    
-    const { groupName } = data || {};
-    if (!groupName || typeof groupName !== "string") {
-      socket.emit("error", { message: "Invalid group name" });
-      return;
-    }
-    
-    const sanitizedGroupName = sanitizeInput(groupName.trim());
-    if (!sanitizedGroupName || sanitizedGroupName.length === 0 || sanitizedGroupName.length > 50) {
-      socket.emit("error", { message: "Group name must be 1-50 characters" });
-      return;
-    }
-    
-    if (groupMessages.has(sanitizedGroupName)) {
-      socket.emit("error", { message: "Group already exists" });
-      return;
-    }
-    
-    // Create group
-    groupMessages.set(sanitizedGroupName, []);
-    groupUsers.set(sanitizedGroupName, new Set());
-    
-    // Auto-join creator
-    socket.join(sanitizedGroupName);
-    userGroups.get(socket.id).add(sanitizedGroupName);
-    groupUsers.get(sanitizedGroupName).add(socket.id);
-    
-    // Notify all clients (broadcast to everyone, including guests)
-    io.emit("all-groups", Array.from(groupMessages.keys()));
-    socket.emit("user-groups", Array.from(userGroups.get(socket.id)));
-    socket.emit("group-messages", {
-      group: sanitizedGroupName,
-      chatHistory: getGroupMessages(sanitizedGroupName),
-    });
   });
 
-  // listen for disconnects and log them (EXISTING - preserved)
-  socket.on("disconnect", () => {
+  // Save outcome
+  socket.on("save-outcome", async (data) => {
     const session = userSessions.get(socket.id);
-    const userInfo = connectedUsers.get(socket.id);
-    const username = session?.username || userInfo?.username || "User";
-    
-    console.log(`${username} disconnected`);
-    
-    // Remove user from all groups (only if authenticated)
+    if (!session?.isAuthenticated) {
+      socket.emit("error", { message: "Please log in." });
+      return;
+    }
+
+    const { conversationId, outcome } = data || {};
+    if (!conversationId || !outcome) return;
+
+    await db.saveOutcome(conversationId, {
+      ...outcome,
+      owner: session.username
+    });
+
+    socket.emit("outcome-saved", { conversationId });
+    console.log(`💾 Outcome saved for ${conversationId}`);
+  });
+
+  // Get conversations
+  socket.on("get-conversations", async () => {
+    const session = userSessions.get(socket.id);
+    if (!session?.isAuthenticated) return;
+
+    const convs = await db.getAllConversations();
+    socket.emit("conversations-list", convs);
+  });
+
+  // Disconnect
+  socket.on("disconnect", async () => {
+    const session = userSessions.get(socket.id);
+    const username = session?.username || "User";
+
+    console.log(`👋 ${username} disconnected`);
+
     if (session?.isAuthenticated) {
-      const userGroupSet = userGroups.get(socket.id) || new Set();
-      userGroupSet.forEach(groupName => {
-        if (groupUsers.has(groupName)) {
-          groupUsers.get(groupName).delete(socket.id);
-        }
-      });
-      userGroups.delete(socket.id);
-      
-      // Send user left system event (legacy support)
-      const leaveEvent = {
-        type: "system",
-        event: "user-left",
-        username: session.username,
-        timestamp: new Date().toISOString(),
-        group: GENERAL_GROUP,
-      };
-      chatHistory.push(leaveEvent);
-      
-      // EXTENSION: Add to General group messages
-      if (groupMessages.has(GENERAL_GROUP)) {
-        groupMessages.get(GENERAL_GROUP).push(leaveEvent);
+      userConversations.delete(socket.id);
+
+      if (session.email) {
+        await db.updateUserLastSeen(session.email);
       }
-      
-      // Broadcast user left event and updated user count (legacy support)
-      io.emit("receive-messages", {
-        chatHistory: getAllMessages(),
-      });
-      io.emit("user-count", authenticatedUsers.size);
-      
-      // EXTENSION: Notify General group
-      io.to(GENERAL_GROUP).emit("group-messages", {
-        group: GENERAL_GROUP,
-        chatHistory: getGroupMessages(GENERAL_GROUP),
-      });
-      
+
+      io.emit("user-count", authenticatedUsers.size - 1);
       authenticatedUsers.delete(socket.id);
     }
-    
-    // Remove user from connected users
+
     connectedUsers.delete(socket.id);
     userSessions.delete(socket.id);
-    
-    // Clean up rate limiting
     userMessageRates.delete(socket.id);
   });
 });
 
-// EXTENSION: Authentication endpoints (must be before static middleware)
+// Authentication Routes
 app.post("/auth/signup", async (req, res) => {
-  console.log("Signup route hit"); // Debug log
   try {
     const { username, email, password } = req.body;
-    
-    // Validation
+
     if (!username || !email || !password) {
-      return res.status(400).json({ error: "Username, email, and password are required" });
+      return res.status(400).json({ error: "All fields are required" });
     }
-    
+
     if (username.length < 3 || username.length > 30) {
       return res.status(400).json({ error: "Username must be 3-30 characters" });
     }
-    
+
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return res.status(400).json({ error: "Invalid email format" });
     }
-    
+
     if (password.length < 6) {
       return res.status(400).json({ error: "Password must be at least 6 characters" });
     }
-    
-    // Check if username or email already exists
-    for (const [userEmail, userData] of users.entries()) {
-      if (userData.username.toLowerCase() === username.toLowerCase() || userEmail.toLowerCase() === email.toLowerCase()) {
-        return res.status(409).json({ error: "Username or email already exists" });
-      }
+
+    const existingUser = await db.getUser(email.toLowerCase());
+    if (existingUser) {
+      return res.status(409).json({ error: "Email already exists" });
     }
-    
-    // Hash password
+
+    const existingUsername = await db.getUserByUsername(username);
+    if (existingUsername) {
+      return res.status(409).json({ error: "Username already exists" });
+    }
+
     const passwordHash = await bcrypt.hash(password, 10);
-    
-    // Store user
-    users.set(email.toLowerCase(), {
+    await db.createUser(email.toLowerCase(), {
       username: sanitizeInput(username),
       email: email.toLowerCase(),
       passwordHash,
     });
-    
-    // Generate JWT
+
     const token = jwt.sign(
       { username: sanitizeInput(username), email: email.toLowerCase() },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
-    
+
+    console.log(`✅ User ${username} created`);
     res.json({ token, username: sanitizeInput(username), email: email.toLowerCase() });
   } catch (error) {
     console.error("Signup error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
 app.post("/auth/login", async (req, res) => {
   try {
     const { emailOrUsername, password } = req.body;
-    
+
     if (!emailOrUsername || !password) {
-      return res.status(400).json({ error: "Email/username and password are required" });
+      return res.status(400).json({ error: "Email/username and password required" });
     }
-    
-    // Find user by email or username
-    let user = null;
-    for (const [email, userData] of users.entries()) {
-      if (email.toLowerCase() === emailOrUsername.toLowerCase() || 
-          userData.username.toLowerCase() === emailOrUsername.toLowerCase()) {
-        user = { email, ...userData };
-        break;
-      }
+
+    let user = await db.getUser(emailOrUsername.toLowerCase());
+    if (!user) {
+      user = await db.getUserByUsername(emailOrUsername);
     }
-    
+
     if (!user) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
-    
-    // Verify password
+
     const isValid = await bcrypt.compare(password, user.passwordHash);
     if (!isValid) {
       return res.status(401).json({ error: "Invalid credentials" });
     }
-    
-    // Generate JWT
+
     const token = jwt.sign(
       { username: user.username, email: user.email },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
-    
+
+    console.log(`✅ ${user.username} logged in`);
     res.json({ token, username: user.username, email: user.email });
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: "Server error" });
   }
 });
 
 app.post("/auth/verify", (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return res.status(401).json({ error: "No token provided" });
     }
-    
+
     const token = authHeader.substring(7);
     const decoded = jwt.verify(token, JWT_SECRET);
-    
+
     res.json({ username: decoded.username, email: decoded.email });
   } catch (error) {
     res.status(401).json({ error: "Invalid token" });
   }
 });
 
-// Test route to verify server is working
 app.get("/auth/test", (req, res) => {
-  res.json({ message: "Auth routes are working", timestamp: new Date().toISOString() });
+  res.json({ message: "Talkio Outcomes Engine running!", timestamp: new Date().toISOString() });
 });
 
-// Boilerplate code - HTTP server setup to serve the page assets (AFTER API routes)
-// Use path relative to the script file location
+// Static files
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const projectRoot = join(__dirname, "..");
 
 app.use(express.static(join(projectRoot, "frontend")));
 
-// HTTP server setup to serve the page at /
 app.get("/", (req, res) => {
-  return res.sendFile(join(projectRoot, "frontend", "index.html"));
+  res.sendFile(join(projectRoot, "frontend", "index.html"));
 });
 
-// start the HTTP server to serve the page
-server.listen(3000, () => {
-  console.log("listening on http://localhost:3000");
-  console.log("Auth routes registered:");
-  console.log("  POST /auth/signup");
-  console.log("  POST /auth/login");
-  console.log("  POST /auth/verify");
+// Start server
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log("");
+  console.log("═══════════════════════════════════════════════");
+  console.log("  🎯 Talkio Outcomes Engine");
+  console.log(`  http://localhost:${PORT}`);
+  console.log("  \"Where conversations finish.\"");
+  console.log("═══════════════════════════════════════════════");
+  console.log("");
 });
 
-// helper functions
-// get all messages in the order they were sent (EXISTING - preserved)
-// FIXED: Messages in chronological order (older at top, newer at bottom)
-function getAllMessages() {
-  // Return in chronological order (oldest first, newest last)
-  return Array.from(chatHistory);
-}
-
-// REMOVED: Random username generation - now using authenticated usernames only
-
-// EXTENSION: Get messages for a specific group
-// FIXED: Messages in chronological order (older at top, newer at bottom)
-function getGroupMessages(groupName) {
-  if (!groupMessages.has(groupName)) {
-    return [];
-  }
-  // Return in chronological order (oldest first, newest last)
-  return Array.from(groupMessages.get(groupName));
-}
-
-// EXTENSION: Security - Sanitize input to prevent XSS
+// Helpers
 function sanitizeInput(input) {
-  if (typeof input !== "string") {
-    return "";
-  }
-  // Remove HTML tags and encode special characters
-  return input
-    .trim()
-    .replace(/[<>]/g, "") // Remove angle brackets
-    .replace(/javascript:/gi, "") // Remove javascript: protocol
-    .replace(/on\w+=/gi, ""); // Remove event handlers
+  if (typeof input !== "string") return "";
+  return input.trim().replace(/[<>]/g, "").replace(/javascript:/gi, "").replace(/on\w+=/gi, "");
 }
 
-// EXTENSION: Security - Rate limiting
 function checkRateLimit(socketId) {
   const now = Date.now();
   const userRate = userMessageRates.get(socketId);
-  
+
   if (!userRate) {
     userMessageRates.set(socketId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
     return true;
   }
-  
+
   if (now > userRate.resetTime) {
-    // Reset window
     userMessageRates.set(socketId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
     return true;
   }
-  
+
   if (userRate.count >= MAX_MESSAGES_PER_MINUTE) {
     return false;
   }
-  
+
   userRate.count++;
   return true;
 }

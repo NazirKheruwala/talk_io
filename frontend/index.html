@@ -1,116 +1,284 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Talkio</title>
-    <link rel="stylesheet" href="styles.css" />
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
-  </head>
 
-  <body>
-    <!-- Authentication Modal (shown if not logged in) -->
-    <div class="auth-modal" id="authModal">
-      <div class="auth-container">
-        <h2 class="auth-title">Welcome to Talkio</h2>
-        <div class="auth-tabs">
-          <button class="auth-tab active" data-tab="login">Login</button>
-          <button class="auth-tab" data-tab="signup">Sign Up</button>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Talkio – Outcomes Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Firebase SDKs are imported as modules in script.js -->
+</head>
+
+<body>
+  <!-- Authentication Modal -->
+  <div class="modal-overlay" id="authModal">
+    <div class="auth-container">
+      <div class="auth-logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 6v6l4 2" />
+          </svg>
         </div>
-        
-        <form class="auth-form" id="loginForm">
-          <input
-            type="text"
-            class="auth-input"
-            id="loginEmailOrUsername"
-            placeholder="Email or Username"
-            required
-            autocomplete="username"
-          />
-          <input
-            type="password"
-            class="auth-input"
-            id="loginPassword"
-            placeholder="Password"
-            required
-            autocomplete="current-password"
-          />
-          <button type="submit" class="auth-button">Login</button>
-        </form>
-        
-        <form class="auth-form" id="signupForm" style="display: none;">
-          <input
-            type="text"
-            class="auth-input"
-            id="signupUsername"
-            placeholder="Username (3-30 characters)"
-            required
-            autocomplete="username"
-            minlength="3"
-            maxlength="30"
-          />
-          <input
-            type="email"
-            class="auth-input"
-            id="signupEmail"
-            placeholder="Email"
-            required
-            autocomplete="email"
-          />
-          <input
-            type="password"
-            class="auth-input"
-            id="signupPassword"
-            placeholder="Password (min 6 characters)"
-            required
-            autocomplete="new-password"
-            minlength="6"
-          />
-          <button type="submit" class="auth-button">Sign Up</button>
-        </form>
-        <div class="auth-error" id="authError"></div>
+        <h1 class="auth-brand">Talkio</h1>
+        <p class="auth-tagline">Where conversations finish.</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Login</button>
+        <button class="auth-tab" data-tab="signup">Sign Up</button>
+      </div>
+
+      <form class="auth-form" id="loginForm">
+        <div class="input-group">
+          <label class="input-label">Email</label>
+          <input type="email" class="input-field" id="loginEmailOrUsername" required autocomplete="username" />
+        </div>
+        <div class="input-group">
+          <label class="input-label">Password</label>
+          <input type="password" class="input-field" id="loginPassword" required autocomplete="current-password" />
+        </div>
+        <button type="submit" class="btn btn-primary">Login</button>
+      </form>
+
+      <form class="auth-form" id="signupForm" style="display: none;">
+        <div class="input-group">
+          <label class="input-label">Username</label>
+          <input type="text" class="input-field" id="signupUsername" required autocomplete="username" minlength="3"
+            maxlength="30" />
+        </div>
+        <div class="input-group">
+          <label class="input-label">Email</label>
+          <input type="email" class="input-field" id="signupEmail" required autocomplete="email" />
+        </div>
+        <div class="input-group">
+          <label class="input-label">Password</label>
+          <input type="password" class="input-field" id="signupPassword" required autocomplete="new-password"
+            minlength="6" />
+        </div>
+        <button type="submit" class="btn btn-primary">Create Account</button>
+      </form>
+      <div class="auth-error" id="authError"></div>
+    </div>
+  </div>
+
+  <!-- Intent Selection Modal (MANDATORY) -->
+  <div class="modal-overlay" id="intentModal" style="display: none;">
+    <div class="intent-container">
+      <h2 class="intent-title">What's this conversation for?</h2>
+      <p class="intent-subtitle">Select the purpose to help guide outcomes</p>
+
+      <div class="intent-grid" id="intentGrid">
+        <button class="intent-card" data-intent="decision">
+          <span class="intent-icon">📋</span>
+          <span class="intent-label">Decision</span>
+          <span class="intent-desc">Make a choice together</span>
+        </button>
+        <button class="intent-card" data-intent="brainstorm">
+          <span class="intent-icon">💡</span>
+          <span class="intent-label">Brainstorm</span>
+          <span class="intent-desc">Generate ideas freely</span>
+        </button>
+        <button class="intent-card" data-intent="support">
+          <span class="intent-icon">🤝</span>
+          <span class="intent-label">Support</span>
+          <span class="intent-desc">Help or get help</span>
+        </button>
+        <button class="intent-card" data-intent="learning">
+          <span class="intent-icon">📚</span>
+          <span class="intent-label">Learning</span>
+          <span class="intent-desc">Share knowledge</span>
+        </button>
+        <button class="intent-card" data-intent="planning">
+          <span class="intent-icon">📅</span>
+          <span class="intent-label">Planning</span>
+          <span class="intent-desc">Organize tasks & timeline</span>
+        </button>
+      </div>
+
+      <div class="time-limit-section">
+        <label class="checkbox-label">
+          <input type="checkbox" id="enableTimeLimit" />
+          <span>Set time limit</span>
+        </label>
+        <div class="time-options" id="timeOptions" style="display: none;">
+          <button class="time-btn" data-hours="24">24h</button>
+          <button class="time-btn" data-hours="168">7 days</button>
+          <button class="time-btn" data-hours="custom">Custom</button>
+        </div>
+      </div>
+
+      <div class="intent-actions">
+        <button class="btn btn-secondary" id="cancelIntent">Cancel</button>
+        <button class="btn btn-primary" id="startConversation" disabled>Start Conversation</button>
       </div>
     </div>
+  </div>
 
-    <div class="app-container" id="appContainer" style="display: none;">
-      <!-- Sidebar for Groups -->
-      <aside class="sidebar">
-        <div class="sidebar-header">
-          <h2 class="sidebar-title">Talkio</h2>
-          <button class="create-group-btn" id="createGroupBtn" title="Create Group">
-            <span>+</span>
-          </button>
+  <!-- Main App Container -->
+  <div class="app-container" id="appContainer" style="display: none;">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-group">
+          <h2 class="sidebar-title">Talk.io</h2>
+          <p class="sidebar-subtitle">Finishing Conversations</p>
         </div>
-        
-        <div class="groups-list" id="groupsList">
-          <!-- Groups will be inserted here -->
-        </div>
-      </aside>
+        <button class="btn-sidebar-close" id="sidebarClose" title="Close Sidebar">×</button>
+        <button class="btn-new-conversation" id="createConversationBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          <span>New Conversation</span>
+        </button>
+      </div>
 
-      <!-- Main Chat Container -->
-      <div class="chat-container">
-        <!-- Header -->
+      <!-- View Toggle -->
+      <div class="view-toggle">
+        <button class="view-btn active" data-view="chats">Chats</button>
+        <button class="view-btn" data-view="dashboard">Dashboard</button>
+      </div>
+
+      <!-- Conversations List -->
+      <div class="conversations-list" id="conversationsList">
+        <!-- Conversations will be inserted here -->
+      </div>
+
+      <!-- User Profile -->
+      <div class="user-profile">
+        <div class="user-avatar" id="userAvatar"></div>
+        <div class="user-details">
+          <span class="user-name" id="userName"></span>
+          <span class="user-status">Online</span>
+        </div>
+        <button class="btn-icon logout-btn" id="logoutBtn" title="Logout">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16,17 21,12 16,7" />
+            <line x1="21" y1="12" x2="9" y2="12" />
+          </svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Chat View -->
+      <div class="chat-view" id="chatView">
+        <!-- Chat Header -->
         <header class="chat-header">
-          <div class="header-left">
-            <h1 class="app-title" id="currentGroupTitle">General</h1>
-            <div class="user-info" id="userInfo" style="display: none;">
-              <span class="user-name" id="userName"></span>
-              <button class="logout-btn" id="logoutBtn" title="Logout">Logout</button>
+          <div class="header-info">
+            <button class="btn-hamburger" id="menuToggle" title="Open Sidebar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+              </svg>
+            </button>
+            <div class="intent-badge" id="intentBadge">
+              <span class="intent-badge-icon">📋</span>
+              <span class="intent-badge-text">Decision</span>
             </div>
-            <div class="guest-banner" id="guestBanner" style="display: none;">
-              <span>Read-only / Login required</span>
-            </div>
+            <h1 class="chat-title" id="chatTitle">General</h1>
           </div>
-          <div class="online-users">
-            <span class="online-indicator"></span>
-            <span class="online-count" id="onlineCount">0</span>
-            <span class="online-text">online</span>
+          <div class="header-meta">
+            <div class="timer" id="conversationTimer" style="display: none;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 6v6l4 2" />
+              </svg>
+              <span id="timerText">23:45:00</span>
+            </div>
+            <div class="status-indicator" id="statusIndicator">
+              <span class="status-dot active"></span>
+              <span class="status-text">Active</span>
+            </div>
+            <button class="btn-icon" id="toggleOutcomePanel" title="Toggle Outcome Panel">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M9 3v18" />
+              </svg>
+            </button>
           </div>
         </header>
 
-        <!-- Scrollable Message Area -->
-        <div class="chat-messages" id="chatMessages">
-          <!-- Messages will be inserted here -->
+        <!-- Chat Body (Messages + Outcome Panel) -->
+        <div class="chat-body">
+          <!-- Messages Area -->
+          <div class="messages-area" id="messagesArea">
+            <div class="welcome-state" id="welcomeState">
+              <div class="welcome-card">
+                <div class="welcome-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                  </svg>
+                </div>
+                <h3>Ready for Outcomes?</h3>
+                <p>Start a new conversation to define decisions and assign action items with your team.</p>
+                <button class="btn btn-primary" onclick="document.getElementById('createConversationBtn').click()"
+                  style="margin: var(--s-3) 0;">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                    style="width:18px; height:18px;">
+                    <path d="M12 5v14M5 12h14" />
+                  </svg>
+                  <span>Create Your First Chat</span>
+                </button>
+                <div class="welcome-suggest">
+                  <span>Pro Tip:</span> Agree on a final choice to see it detected as a <strong>Decision</strong>.
+                </div>
+              </div>
+            </div>
+            <!-- Messages will be inserted here -->
+          </div>
+
+          <!-- Outcome Panel (Collapsible) -->
+          <aside class="outcome-panel" id="outcomePanel">
+            <div class="outcome-header">
+              <h3>Outcome</h3>
+              <button class="btn-icon" id="closeOutcomePanel">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            <div class="outcome-content">
+              <!-- Summary -->
+              <div class="outcome-section">
+                <label class="outcome-label">Summary</label>
+                <textarea class="outcome-textarea" id="outcomeSummary"
+                  placeholder="Write a summary of this conversation..."></textarea>
+              </div>
+
+              <!-- Decisions -->
+              <div class="outcome-section">
+                <label class="outcome-label">Decisions</label>
+                <div class="outcome-list" id="decisionsList">
+                  <!-- Decisions will be inserted here -->
+                </div>
+                <button class="btn-add" id="addDecision">+ Add Decision</button>
+              </div>
+
+              <!-- Action Items -->
+              <div class="outcome-section">
+                <label class="outcome-label">Action Items</label>
+                <div class="outcome-list" id="actionsList">
+                  <!-- Actions will be inserted here -->
+                </div>
+                <button class="btn-add" id="addAction">+ Add Action</button>
+              </div>
+            </div>
+
+            <div class="outcome-footer">
+              <p class="status-msg subtle">Outcomes are automatically saved.</p>
+            </div>
+          </aside>
         </div>
 
         <!-- Typing Indicator -->
@@ -121,45 +289,111 @@
           <span class="typing-text" id="typingText"></span>
         </div>
 
-        <!-- Sticky Input Bar -->
+        <!-- AI Hint Bar (Subtle) -->
+        <div class="ai-hint" id="aiHint" style="display: none;">
+          <span class="ai-hint-icon">💡</span>
+          <span class="ai-hint-text" id="aiHintText">Possible decision detected</span>
+          <button class="ai-hint-action" id="aiHintAction">Add to Decisions</button>
+          <button class="ai-hint-dismiss" id="aiHintDismiss">×</button>
+        </div>
+
+        <!-- Message Input -->
         <div class="chat-input-container">
           <form class="chat-form" id="chatForm">
-            <input
-              type="text"
-              class="chat-input"
-              id="messageInput"
-              placeholder="Type your message here..."
-              autocomplete="off"
-            />
-            <button type="submit" class="send-button" id="sendButton" disabled>
-              Send
+            <button type="button" class="btn-icon" id="voiceNoteBtn" title="Voice Note">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" y1="19" x2="12" y2="23" />
+                <line x1="8" y1="23" x2="16" y2="23" />
+              </svg>
+            </button>
+            <input type="text" class="message-input" id="messageInput" placeholder="Type a message..."
+              autocomplete="off" />
+            <button type="submit" class="btn-send" id="sendButton" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22,2 15,22 11,13 2,9" />
+              </svg>
             </button>
           </form>
         </div>
       </div>
-    </div>
 
-    <!-- Create Group Modal -->
-    <div class="modal-overlay" id="createGroupModal" style="display: none;">
-      <div class="modal-content">
-        <h3>Create New Group</h3>
-        <form id="createGroupForm">
-          <input
-            type="text"
-            class="modal-input"
-            id="newGroupName"
-            placeholder="Group name"
-            required
-            maxlength="50"
-          />
-          <div class="modal-buttons">
-            <button type="button" class="modal-button cancel" id="cancelCreateGroup">Cancel</button>
-            <button type="submit" class="modal-button primary">Create</button>
+      <!-- Dashboard View -->
+      <div class="dashboard-view" id="dashboardView" style="display: none;">
+        <header class="dashboard-header">
+          <h1>Outcome Dashboard</h1>
+        </header>
+
+        <div class="dashboard-stats">
+          <div class="stat-card">
+            <span class="stat-value" id="activeCount">0</span>
+            <span class="stat-label">Active</span>
           </div>
-        </form>
+          <div class="stat-card">
+            <span class="stat-value" id="closingCount">0</span>
+            <span class="stat-label">Closing</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value" id="completedCount">0</span>
+            <span class="stat-label">Completed</span>
+          </div>
+        </div>
+
+        <div class="dashboard-sections">
+          <section class="dashboard-section">
+            <h2>Active Conversations</h2>
+            <div class="conversation-cards" id="activeConversations">
+              <!-- Active conversations will be inserted here -->
+            </div>
+          </section>
+
+          <section class="dashboard-section">
+            <h2>Closing Soon</h2>
+            <div class="conversation-cards" id="closingConversations">
+              <!-- Closing conversations will be inserted here -->
+            </div>
+          </section>
+
+          <section class="dashboard-section">
+            <h2>Completed Outcomes</h2>
+            <div class="outcome-cards" id="completedOutcomes">
+              <!-- Completed outcomes will be inserted here -->
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Decision Modal -->
+  <div class="modal-overlay modal-small" id="addDecisionModal" style="display: none;">
+    <div class="modal-content">
+      <h3>Add Decision</h3>
+      <input type="text" class="input-field" id="newDecisionText" placeholder="What was decided?" />
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="cancelDecision">Cancel</button>
+        <button class="btn btn-primary" id="confirmDecision">Add</button>
       </div>
     </div>
+  </div>
 
-    <script src="script.js"></script>
-  </body>
+  <!-- Add Action Modal -->
+  <div class="modal-overlay modal-small" id="addActionModal" style="display: none;">
+    <div class="modal-content">
+      <h3>Add Action Item</h3>
+      <input type="text" class="input-field" id="newActionText" placeholder="What needs to be done?" />
+      <input type="text" class="input-field" id="newActionOwner" placeholder="Owner (optional)" />
+      <input type="date" class="input-field" id="newActionDeadline" />
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="cancelAction">Cancel</button>
+        <button class="btn btn-primary" id="confirmAction">Add</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+
 </html>

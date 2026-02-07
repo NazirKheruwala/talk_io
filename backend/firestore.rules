@@ -1,0 +1,49 @@
+// Firestore Security Rules - Simplified for Development
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Groups collection - allow authenticated users to read and create
+    match /groups/{groupId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.creatorId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && resource.data.creatorId == request.auth.uid;
+    }
+
+    // Memberships collection
+    match /memberships/{membershipId} {
+      // Allow users to read all memberships (for browsing groups)
+      allow read: if isAuthenticated();
+      
+      // Users can create pending membership for themselves
+      allow create: if isAuthenticated() && 
+                    request.resource.data.userId == request.auth.uid &&
+                    request.resource.data.status == "pending";
+      
+      // Only group admin can update membership status
+      allow update: if isAuthenticated() && 
+                    get(/databases/$(database)/documents/groups/$(request.resource.data.groupId)).data.creatorId == request.auth.uid;
+    }
+
+    // Messages collection - simplified for development
+    match /messages/{messageId} {
+      // Allow authenticated users to read messages
+      allow read: if isAuthenticated();
+      
+      // Allow authenticated users to create messages
+      allow create: if isAuthenticated() && 
+                    request.resource.data.senderId == request.auth.uid;
+    }
+  }
+}

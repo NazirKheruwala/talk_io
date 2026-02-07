@@ -1,0 +1,11 @@
+{
+  "rules": {
+    "presence": {
+      ".read": "auth != null",
+      "$userId": {
+        ".write": "auth != null && auth.uid == $userId",
+        ".validate": "newData.hasChildren(['isOnline', 'lastChanged']) && newData.child('isOnline').isBoolean()"
+      }
+    }
+  }
+}
