@@ -1,5 +1,5 @@
 /* Talk.io – Brainwave AI Inspired UI */
-/* Deep Dark, Glassmorphism, Premium AI Experience */
+/* Bright, Modern, Glassmorphism, Premium Experience */
 
 :root {
   /* Brainwave AI Palette – Deep Dark Premium */
@@ -36,10 +36,10 @@
   /* Red */
 
   /* Text – Clean & High Legibility */
-  --text-primary: #FFFFFF;
-  --text-secondary: rgba(255, 255, 255, 0.75);
-  --text-tertiary: rgba(255, 255, 255, 0.5);
-  --text-muted: rgba(255, 255, 255, 0.3);
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-tertiary: #64748B;
+  --text-muted: #94A3B8;
 
   /* Layout Spacing (8px Grid) */
   --s-1: 4px;
@@ -242,12 +242,12 @@ body::after {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(148, 163, 184, 0.5);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(148, 163, 184, 0.7);
 }
 
 /* App Container */
@@ -413,7 +413,7 @@ body::after {
   background: var(--bg-surface);
   border-color: var(--accent-border);
   color: var(--text-primary);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-sm);
 }
 
 .conversation-item:active {
@@ -655,6 +655,7 @@ body::after {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  background: transparent;
 }
 
 /* Empty State – Dashboard Card Style */
@@ -823,7 +824,7 @@ body::after {
 .chat-input-container {
   padding: var(--s-6) var(--s-6) var(--s-8);
   background: transparent;
-  max-width: 940px;
+  max-width: min(100%, 960px);
   margin: 0 auto;
   width: 100%;
 }
@@ -906,6 +907,10 @@ body::after {
 .btn-send:hover:not(:disabled) {
   background: var(--accent-hover);
   transform: scale(1.05);
+}
+
+.btn-send:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .btn-send:disabled {
@@ -1033,7 +1038,7 @@ body::after {
 .outcome-textarea {
   width: 100%;
   border: 2px solid var(--border);
-  background: var(--bg-subtle);
+  background: var(--bg-surface);
   border-radius: var(--radius-md);
   padding: var(--s-3) var(--s-4);
   min-height: 120px;
@@ -1112,6 +1117,10 @@ body::after {
   gap: 8px;
 }
 
+.btn:active {
+  transform: translateY(1px);
+}
+
 .btn-primary {
   background: var(--accent-gradient);
   color: white;
@@ -1149,8 +1158,8 @@ body::after {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(4px);
+  background: rgba(15, 23, 42, 0.2);
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1438,7 +1447,7 @@ body::after {
   align-items: center;
   gap: 12px;
   padding: 12px 24px;
-  background: linear-gradient(to right, rgba(74, 144, 226, 0.08), rgba(74, 144, 226, 0.05));
+  background: linear-gradient(to right, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0.04));
   border-top: 1px solid var(--accent-border);
 }
 
@@ -1541,7 +1550,7 @@ body::after {
   flex: 1;
   padding: var(--s-8) var(--s-8);
   overflow-y: auto;
-  background: var(--bg-dark);
+  background: var(--bg-app);
 }
 
 .dashboard-header h1 {
@@ -1796,7 +1805,7 @@ body::after {
   .sidebar-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(15, 23, 42, 0.3);
     backdrop-filter: blur(8px);
     z-index: 900;
     opacity: 0;
@@ -2378,7 +2387,7 @@ body::after {
 .sidebar-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(15, 23, 42, 0.2);
   backdrop-filter: blur(2px);
   z-index: 350;
   opacity: 0;
