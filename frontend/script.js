@@ -84,6 +84,10 @@ const timerText = document.getElementById("timerText");
 const statusIndicator = document.getElementById("statusIndicator");
 const typingIndicator = document.getElementById("typingIndicator");
 const typingText = document.getElementById("typingText");
+const momentumMeter = document.getElementById("momentumMeter");
+const momentumValue = document.getElementById("momentumValue");
+const momentumBar = document.getElementById("momentumBar");
+const momentumNote = document.getElementById("momentumNote");
 
 // Outcome Panel
 const outcomePanel = document.getElementById("outcomePanel");
@@ -609,6 +613,9 @@ function updateChatUI() {
       <button class="btn btn-primary" onclick="document.getElementById('createConversationBtn').click()">New Conversation</button>
     `;
     intentBadge.parentElement.style.visibility = "hidden";
+    if (momentumMeter) {
+      momentumMeter.style.visibility = "hidden";
+    }
     messageInput.placeholder = "Select a conversation to start messaging";
     messageInput.disabled = true;
     sendButton.disabled = true;
@@ -620,6 +627,9 @@ function updateChatUI() {
   messageInput.disabled = false;
   messageInput.placeholder = "Type a message...";
   intentBadge.parentElement.style.visibility = "visible";
+  if (momentumMeter) {
+    momentumMeter.style.visibility = "visible";
+  }
 
   const intent = INTENTS[AppState.conversation.current.intent];
   document.querySelector(".intent-badge-icon").textContent = intent.icon;
@@ -832,6 +842,7 @@ function renderMessages(messages) {
     }
   });
 
+  updateOutcomeMomentum(messages);
   scrollToBottom();
 }
 
@@ -881,6 +892,43 @@ function renderSystemMessage(item) {
 
   systemDiv.innerHTML = text;
   messagesArea.appendChild(systemDiv);
+}
+
+function updateOutcomeMomentum(messages) {
+  if (!momentumMeter || !momentumValue || !momentumBar || !momentumNote) return;
+
+  const userMessages = (messages || []).filter(msg => msg.type !== "system");
+  const total = userMessages.length;
+
+  if (total === 0) {
+    momentumValue.textContent = "0%";
+    momentumBar.style.width = "0%";
+    momentumNote.textContent = "Start messaging to see momentum.";
+    return;
+  }
+
+  const actionableCount = userMessages.reduce((count, msg) => {
+    const text = msg.message || msg.content || "";
+    if (!text) return count;
+    const isDecision = AI_PATTERNS.decision.some(pattern => pattern.test(text));
+    const isAction = AI_PATTERNS.action.some(pattern => pattern.test(text));
+    return count + (isDecision || isAction ? 1 : 0);
+  }, 0);
+
+  const ratio = actionableCount / total;
+  const percent = Math.min(100, Math.round(ratio * 100));
+  momentumValue.textContent = `${percent}%`;
+  momentumBar.style.width = `${percent}%`;
+
+  if (percent < 15) {
+    momentumNote.textContent = "Nudge: capture explicit decisions or next steps.";
+  } else if (percent < 35) {
+    momentumNote.textContent = "Momentum building—summarize decisions as they happen.";
+  } else if (percent < 60) {
+    momentumNote.textContent = "Strong momentum. Keep logging outcomes.";
+  } else {
+    momentumNote.textContent = "Excellent clarity. Outcomes are well captured.";
+  }
 }
 
 // =====================
