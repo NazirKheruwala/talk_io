@@ -365,8 +365,8 @@ io.on("connection", (socket) => {
         await db.updateUserLastSeen(session.email);
       }
 
-      io.emit("user-count", authenticatedUsers.size - 1);
       authenticatedUsers.delete(socket.id);
+      io.emit("user-count", authenticatedUsers.size);
     }
 
     connectedUsers.delete(socket.id);
