@@ -2,44 +2,37 @@
 /* Bright, Modern, Glassmorphism, Premium Experience */
 
 :root {
-  /* Brainwave AI Palette – Deep Dark Premium */
-  --bg-dark: #0B0B16;
-  --bg-surface: rgba(255, 255, 255, 0.06);
-  --bg-elevated: rgba(255, 255, 255, 0.1);
-  --bg-subtle: rgba(255, 255, 255, 0.04);
-  --bg-app: var(--bg-dark);
-  --bg-hover: rgba(255, 255, 255, 0.12);
-  --bg-glow: radial-gradient(circle at top left, rgba(138, 92, 255, 0.18), transparent 55%),
-    radial-gradient(circle at 20% 80%, rgba(34, 197, 255, 0.18), transparent 50%),
-    radial-gradient(circle at 90% 20%, rgba(244, 114, 182, 0.2), transparent 45%);
+  /* White, Production-grade Palette */
+  --bg-dark: #F8FAFC;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #F3F6FB;
+  --bg-subtle: #EEF2F7;
+  --bg-app: #F7F9FC;
+  --bg-hover: #E8EEF7;
+  --bg-glow: radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 55%),
+    radial-gradient(circle at 20% 80%, rgba(14, 165, 233, 0.08), transparent 50%),
+    radial-gradient(circle at 90% 20%, rgba(236, 72, 153, 0.08), transparent 45%);
 
-  /* Accents – Vibrant Brainwave Vibes */
-  --accent-primary: #8B5CFF;
-  /* Violet */
-  --accent-secondary: #3B82F6;
-  /* Blue */
+  /* Accents – Crisp Blue */
+  --accent-primary: #2563EB;
+  --accent-secondary: #0EA5E9;
   --accent: var(--accent-primary);
-  /* Primary accent fallback */
-  --accent-hover: #9B76FF;
-  /* Slightly brighter on hover */
-  --accent-gradient: linear-gradient(120deg, #8B5CFF 0%, #3B82F6 55%, #06B6D4 100%);
-  --accent-soft: rgba(139, 92, 255, 0.18);
-  --accent-light: rgba(139, 92, 255, 0.12);
-  --accent-border: rgba(139, 92, 255, 0.35);
+  --accent-hover: #1D4ED8;
+  --accent-gradient: linear-gradient(120deg, #2563EB 0%, #3B82F6 55%, #0EA5E9 100%);
+  --accent-soft: rgba(37, 99, 235, 0.12);
+  --accent-light: rgba(37, 99, 235, 0.08);
+  --accent-border: rgba(37, 99, 235, 0.25);
 
   /* Semantic Colors */
-  --success: #10B981;
-  /* Emerald green */
+  --success: #16A34A;
   --warning: #F59E0B;
-  /* Amber */
-  --error: #EF4444;
-  /* Red */
+  --error: #DC2626;
 
-  /* Text – Clean & High Legibility */
-  --text-primary: #F8FAFC;
-  --text-secondary: #E2E8F0;
-  --text-tertiary: #94A3B8;
-  --text-muted: #64748B;
+  /* Text */
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-tertiary: #64748B;
+  --text-muted: #94A3B8;
 
   /* Layout Spacing (8px Grid) */
   --s-1: 4px;
@@ -51,17 +44,17 @@
   --s-7: 48px;
   --s-8: 64px;
 
-  /* Elevations & Glass (Brainwave Style) */
-  --border: rgba(255, 255, 255, 0.1);
-  --border-strong: rgba(255, 255, 255, 0.16);
-  --glass-bg: rgba(10, 10, 20, 0.86);
-  --glass-blur: blur(20px);
-  --glass-border: 1px solid rgba(255, 255, 255, 0.12);
-  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-sm: 0 8px 20px -12px rgba(12, 14, 32, 0.8);
-  --shadow-md: 0 14px 30px -16px rgba(12, 14, 32, 0.85);
-  --shadow-xl: 0 22px 50px -20px rgba(8, 10, 28, 0.9);
-  --shadow-2xl: 0 30px 60px -18px rgba(8, 9, 23, 0.9);
+  /* Elevations & Glass */
+  --border: #E2E8F0;
+  --border-strong: #CBD5E1;
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-blur: blur(18px);
+  --glass-border: 1px solid rgba(148, 163, 184, 0.25);
+  --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.06);
+  --shadow-sm: 0 8px 20px -12px rgba(15, 23, 42, 0.18);
+  --shadow-md: 0 18px 30px -18px rgba(15, 23, 42, 0.25);
+  --shadow-xl: 0 24px 48px -24px rgba(15, 23, 42, 0.35);
+  --shadow-2xl: 0 36px 60px -30px rgba(15, 23, 42, 0.4);
 
   /* Radii */
   --radius-sm: 8px;
@@ -228,7 +221,7 @@ body::before {
 }
 
 body::after {
-  background: linear-gradient(180deg, rgba(11, 11, 22, 0.1) 0%, rgba(11, 11, 22, 0.9) 65%);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.2) 0%, rgba(248, 250, 252, 0.95) 65%);
   z-index: -1;
 }
 
@@ -263,7 +256,7 @@ body::after {
 
 .sidebar {
   width: var(--sidebar-w);
-  background: linear-gradient(180deg, rgba(20, 20, 38, 0.85) 0%, rgba(11, 11, 22, 0.92) 100%);
+  background: linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%);
   backdrop-filter: var(--glass-blur);
   border-right: 1px solid var(--border);
   display: flex;
@@ -360,7 +353,7 @@ body::after {
   gap: 4px;
   padding: 4px;
   margin: 16px;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-subtle);
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
 }
@@ -379,7 +372,7 @@ body::after {
 }
 
 .view-btn.active {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--bg-elevated);
   color: var(--text-primary);
   box-shadow: var(--shadow-xs);
 }
@@ -491,7 +484,7 @@ body::after {
 }
 
 .conv-status.active {
-  background: rgba(16, 185, 129, 0.1);
+  background: rgba(22, 163, 74, 0.12);
   color: var(--success);
 }
 
@@ -571,10 +564,18 @@ body::after {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(15, 17, 33, 0.8);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: var(--glass-blur);
   border-bottom: 1px solid var(--border);
-  box-shadow: 0 12px 30px -24px rgba(10, 10, 18, 0.9);
+  box-shadow: 0 12px 30px -24px rgba(15, 23, 42, 0.2);
+}
+
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .header-info {
@@ -636,6 +637,60 @@ body::after {
 
 .status-dot.closing {
   background: var(--warning);
+}
+
+/* Outcome Momentum Meter */
+.momentum-meter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+  min-width: 220px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
+}
+
+.momentum-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.momentum-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  font-weight: 700;
+}
+
+.momentum-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.momentum-track {
+  height: 6px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+
+.momentum-bar {
+  height: 100%;
+  width: 0%;
+  background: var(--accent-gradient);
+  border-radius: inherit;
+  transition: width var(--transition);
+}
+
+.momentum-note {
+  font-size: 12px;
+  color: var(--text-tertiary);
 }
 
 /* ==================== */
@@ -737,7 +792,7 @@ body::after {
   top: 0;
   height: 40px;
   margin-bottom: -40px;
-  background: linear-gradient(180deg, rgba(11, 11, 22, 0.95) 0%, rgba(11, 11, 22, 0) 100%);
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.95) 0%, rgba(248, 250, 252, 0) 100%);
   z-index: 1;
 }
 
@@ -772,7 +827,7 @@ body::after {
 }
 
 .message.other .message-bubble {
-  background: rgba(18, 20, 38, 0.75);
+  background: var(--bg-surface);
   color: var(--text-primary);
   border: 1px solid var(--border);
   border-bottom-left-radius: var(--s-1);
@@ -834,9 +889,9 @@ body::after {
   align-items: center;
   gap: var(--s-3);
   padding: var(--s-2) var(--s-2) var(--s-2) var(--s-6);
-  background: rgba(15, 17, 33, 0.85);
+  background: var(--bg-surface);
   border-radius: var(--radius-pill);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border);
   transition: all var(--transition);
   backdrop-filter: var(--glass-blur);
 }
@@ -844,7 +899,7 @@ body::after {
 .chat-form:focus-within {
   border-color: var(--accent-primary);
   box-shadow: 0 0 0 4px var(--accent-soft);
-  background: rgba(24, 26, 46, 0.9);
+  background: var(--bg-elevated);
 }
 
 .message-input {
@@ -931,7 +986,7 @@ body::after {
 /* Outcome Panel */
 .outcome-panel {
   width: var(--outcome-w);
-  background: linear-gradient(180deg, rgba(20, 22, 40, 0.9) 0%, rgba(10, 10, 20, 0.95) 100%);
+  background: linear-gradient(180deg, #FFFFFF 0%, #F4F7FC 100%);
   backdrop-filter: var(--glass-blur);
   border-left: 1px solid var(--border);
   display: flex;
@@ -1181,14 +1236,14 @@ body::after {
 }
 
 .btn-secondary {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--bg-subtle);
   color: var(--text-primary);
   flex: 1;
   border: 1px solid var(--border);
 }
 
 .btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--bg-elevated);
 }
 
 /* ==================== */
@@ -1198,7 +1253,7 @@ body::after {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(2, 6, 23, 0.55);
+  background: rgba(15, 23, 42, 0.28);
   backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
@@ -1210,7 +1265,7 @@ body::after {
 .auth-container,
 .intent-container,
 .modal-content {
-  background: linear-gradient(180deg, rgba(22, 24, 40, 0.95) 0%, rgba(12, 12, 22, 0.9) 100%);
+  background: linear-gradient(180deg, #FFFFFF 0%, #F6F8FC 100%);
   border-radius: var(--radius-xl);
   padding: 32px;
   box-shadow: var(--shadow-xl);
@@ -1322,10 +1377,10 @@ body::after {
 
 .input-field {
   padding: 12px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--border);
   border-radius: var(--radius-md);
   font-size: 15px;
-  background: rgba(18, 20, 36, 0.8);
+  background: var(--bg-surface);
   color: var(--text-primary);
   outline: none;
   transition: all var(--transition);
@@ -1376,8 +1431,8 @@ body::after {
 
 .intent-card {
   padding: 20px 16px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(18, 20, 36, 0.75);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
   border-radius: var(--radius-card);
   cursor: pointer;
   transition: all var(--transition);
@@ -1659,7 +1714,7 @@ body::after {
   border: 1px dashed var(--border);
   text-align: center;
   color: var(--text-tertiary);
-  background: rgba(15, 23, 42, 0.2);
+  background: var(--bg-elevated);
 }
 
 .conversation-cards,
@@ -1806,6 +1861,10 @@ body::after {
     width: 320px;
     opacity: 1;
   }
+
+  .momentum-meter {
+    display: none;
+  }
 }
 
 /* Mobile (≤767px) */
@@ -1855,7 +1914,7 @@ body::after {
   .sidebar-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.3);
+    background: rgba(148, 163, 184, 0.35);
     backdrop-filter: blur(8px);
     z-index: 900;
     opacity: 0;
@@ -2437,7 +2496,7 @@ body::after {
 .sidebar-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.2);
+  background: rgba(148, 163, 184, 0.3);
   backdrop-filter: blur(2px);
   z-index: 350;
   opacity: 0;
