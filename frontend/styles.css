@@ -36,10 +36,10 @@
   /* Red */
 
   /* Text – Clean & High Legibility */
-  --text-primary: #0F172A;
-  --text-secondary: #475569;
-  --text-tertiary: #64748B;
-  --text-muted: #94A3B8;
+  --text-primary: #F8FAFC;
+  --text-secondary: #E2E8F0;
+  --text-tertiary: #94A3B8;
+  --text-muted: #64748B;
 
   /* Layout Spacing (8px Grid) */
   --s-1: 4px;
@@ -1061,6 +1061,46 @@ body::after {
   color: var(--text-tertiary);
 }
 
+.outcome-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+
+.outcome-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  transition: all var(--transition);
+}
+
+.outcome-item:hover {
+  background: var(--bg-elevated);
+  border-color: var(--border-strong);
+}
+
+.outcome-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent-primary);
+}
+
+.outcome-item-content {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.outcome-item-actions {
+  display: flex;
+  gap: var(--s-2);
+}
+
 .outcome-item-remove {
   font-size: 18px;
   color: var(--text-muted);
@@ -1158,7 +1198,7 @@ body::after {
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.2);
+  background: rgba(2, 6, 23, 0.55);
   backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
@@ -1286,6 +1326,7 @@ body::after {
   border-radius: var(--radius-md);
   font-size: 15px;
   background: rgba(18, 20, 36, 0.8);
+  color: var(--text-primary);
   outline: none;
   transition: all var(--transition);
 }
@@ -1610,6 +1651,15 @@ body::after {
   font-size: 18px;
   font-weight: 700;
   margin-bottom: 20px;
+}
+
+.empty-state-subtle {
+  padding: 20px;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border);
+  text-align: center;
+  color: var(--text-tertiary);
+  background: rgba(15, 23, 42, 0.2);
 }
 
 .conversation-cards,

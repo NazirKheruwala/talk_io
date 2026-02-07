@@ -934,6 +934,7 @@ async function updateOutcomePanel() {
 
   // Update outcome logic (Persistence in groups document)
   const groupDoc = await getDoc(groupDocRef);
+  if (!groupDoc.exists()) return;
   const outcome = groupDoc.data().outcome || { summary: "", decisions: [], actions: [] };
 
   outcomeSummary.value = outcome.summary || "";
@@ -970,6 +971,28 @@ async function handleRejectJoin(groupId, userId) {
 // OUTCOME PANEL (INITIALIZATION & HANDLERS)
 // =====================
 function initializeOutcomePanel() {
+  addDecision.addEventListener("click", () => {
+    addDecisionModal.style.display = "flex";
+    document.getElementById("newDecisionText").value = "";
+    document.getElementById("newDecisionText").focus();
+  });
+
+  addAction.addEventListener("click", () => {
+    addActionModal.style.display = "flex";
+    document.getElementById("newActionText").value = "";
+    document.getElementById("newActionOwner").value = "";
+    document.getElementById("newActionDeadline").value = "";
+    document.getElementById("newActionText").focus();
+  });
+
+  document.getElementById("cancelDecision").addEventListener("click", () => {
+    addDecisionModal.style.display = "none";
+  });
+
+  document.getElementById("cancelAction").addEventListener("click", () => {
+    addActionModal.style.display = "none";
+  });
+
   outcomeSummary.addEventListener("input", async () => {
     if (AppState.conversation.current) {
       await updateDoc(doc(db, "groups", AppState.conversation.current.id), {
@@ -982,11 +1005,9 @@ function initializeOutcomePanel() {
   document.getElementById("confirmDecision").onclick = async () => {
     const text = document.getElementById("newDecisionText").value.trim();
     if (text && AppState.conversation.current) {
-      const groupRef = doc(db, "groups", AppState.conversation.current.id);
-      const groupSnap = await getDoc(groupRef);
-      const outcome = groupSnap.data().outcome || { summary: "", decisions: [], actions: [] };
-      outcome.decisions.push({ text, timestamp: new Date().toISOString() });
-      await updateDoc(groupRef, { outcome });
+      await updateOutcomeWithItem((outcome) => {
+        outcome.decisions.push({ text, timestamp: new Date().toISOString() });
+      });
       updateOutcomePanel();
       addDecisionModal.style.display = "none";
       document.getElementById("newDecisionText").value = "";
@@ -996,16 +1017,14 @@ function initializeOutcomePanel() {
   document.getElementById("confirmAction").onclick = async () => {
     const text = document.getElementById("newActionText").value.trim();
     if (text && AppState.conversation.current) {
-      const groupRef = doc(db, "groups", AppState.conversation.current.id);
-      const groupSnap = await getDoc(groupRef);
-      const outcome = groupSnap.data().outcome || { summary: "", decisions: [], actions: [] };
-      outcome.actions.push({
-        text,
-        owner: document.getElementById("newActionOwner").value.trim() || null,
-        deadline: document.getElementById("newActionDeadline").value || null,
-        completed: false
+      await updateOutcomeWithItem((outcome) => {
+        outcome.actions.push({
+          text,
+          owner: document.getElementById("newActionOwner").value.trim() || null,
+          deadline: document.getElementById("newActionDeadline").value || null,
+          completed: false
+        });
       });
-      await updateDoc(groupRef, { outcome });
       updateOutcomePanel();
       addActionModal.style.display = "none";
       document.getElementById("newActionText").value = "";
@@ -1175,23 +1194,27 @@ function initializeAIHints() {
     aiHint.style.display = "none";
   });
 
-  aiHintAction.addEventListener("click", () => {
+  aiHintAction.addEventListener("click", async () => {
     const type = aiHintAction.dataset.type;
     const text = aiHintAction.dataset.text;
 
     if (type === "decision" && AppState.conversation.current) {
-      AppState.conversation.current.outcome.decisions.push({
-        text,
-        timestamp: new Date().toISOString()
+      await updateOutcomeWithItem((outcome) => {
+        outcome.decisions.push({
+          text,
+          timestamp: new Date().toISOString()
+        });
       });
       updateOutcomePanel();
       showToast("Decision added!", "success");
     } else if (type === "action" && AppState.conversation.current) {
-      AppState.conversation.current.outcome.actions.push({
-        text,
-        owner: null,
-        deadline: null,
-        completed: false
+      await updateOutcomeWithItem((outcome) => {
+        outcome.actions.push({
+          text,
+          owner: null,
+          deadline: null,
+          completed: false
+        });
       });
       updateOutcomePanel();
       showToast("Action added!", "success");
@@ -1232,6 +1255,17 @@ function showAIHint(type, text, label) {
 // =====================
 // UTILITIES
 // =====================
+async function updateOutcomeWithItem(updateFn) {
+  if (!AppState.conversation.current) return null;
+  const groupRef = doc(db, "groups", AppState.conversation.current.id);
+  const groupSnap = await getDoc(groupRef);
+  if (!groupSnap.exists()) return null;
+  const outcome = groupSnap.data().outcome || { summary: "", decisions: [], actions: [] };
+  updateFn(outcome);
+  await updateDoc(groupRef, { outcome });
+  return groupRef;
+}
+
 function getInitials(name) {
   if (!name) return "?";
   const parts = name.trim().split(/\s+/);
