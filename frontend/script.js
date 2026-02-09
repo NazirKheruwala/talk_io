@@ -1414,12 +1414,12 @@ function initializeMobileNavigation() {
     const closeOutcomePanel = document.getElementById('closeOutcomePanel');
 
     const toggleOutcome = (force) => {
-      const isVisible = typeof force === 'boolean' ? force : outcomePanel.classList.contains('collapsed');
-      outcomePanel.classList.toggle('collapsed', !isVisible);
-      if (isVisible && window.innerWidth <= 1023) {
+      const isOpen = typeof force === 'boolean' ? force : !outcomePanel.classList.contains('collapsed');
+      outcomePanel.classList.toggle('collapsed', !isOpen);
+      if (isOpen && window.innerWidth <= 1023) {
         // On mobile/tablet, show overlay if outcome is visible
         overlay.classList.add('visible');
-      } else if (!isVisible && window.innerWidth <= 1023) {
+      } else if (!isOpen && window.innerWidth <= 1023) {
         // If sidebar is also not visible, hide overlay
         if (!sidebar.classList.contains('visible')) {
           overlay.classList.remove('visible');
@@ -1471,7 +1471,9 @@ function initializeMobileNavigation() {
         }
 
         // Smart-collapse outcome panel on medium screens if not explicitly toggled
-        if (window.innerWidth < 1366 && window.innerWidth > 1023) {
+        if (window.innerWidth <= 1023) {
+          outcomePanel.classList.add('collapsed');
+        } else if (window.innerWidth < 1366) {
           outcomePanel.classList.add('collapsed');
         } else if (window.innerWidth >= 1366) {
           outcomePanel.classList.remove('collapsed');
