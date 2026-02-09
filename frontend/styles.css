@@ -1,6 +1,3 @@
-/* Talk.io – Brainwave AI Inspired UI */
-/* Bright, Modern, Glassmorphism, Premium Experience */
-
 :root {
   /* White, Production-grade Palette */
   --bg-dark: #F8FAFC;
@@ -64,11 +61,10 @@
   --radius-pill: 9999px;
   --radius-card: 18px;
 
-  /* Dimensions & Responsiveness - Optimized */
-  --sidebar-w: 300px;
-  --outcome-w: 340px;
+  /* Dimensions & Responsiveness */
+  --sidebar-w: 260px;
+  --outcome-w: 300px;
   --header-h: 64px;
-  --chat-max-w: 900px;
 
   /* Typography */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -193,10 +189,20 @@ label {
   box-sizing: border-box;
 }
 
-body {
+body,
+html {
+  margin: 0;
+  padding: 0;
   font-family: var(--font-sans);
-  background: var(--bg-dark);
+  background: var(--bg-app);
   color: var(--text-primary);
+  height: 100%;
+  overflow-x: hidden;
+  /* Prevent horizontal scroll */
+  width: 100%;
+}
+
+body {
   font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -243,29 +249,37 @@ body::after {
   background: rgba(148, 163, 184, 0.7);
 }
 
-/* App Container */
+/* App Container - Fully Responsive */
 .app-container {
   display: flex;
   height: 100vh;
+  width: 100vw;
+  max-width: 100vw;
   background: transparent;
+  overflow: hidden;
 }
+
 
 /* ==================== */
 /* SIDEBAR              */
 /* ==================== */
 
 .sidebar {
+  flex: 0 0 var(--sidebar-w);
   width: var(--sidebar-w);
+  max-width: var(--sidebar-w);
+  min-width: 0;
   background: linear-gradient(180deg, #FFFFFF 0%, #F7FAFF 100%);
   backdrop-filter: var(--glass-blur);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
   z-index: 100;
   transition: transform var(--transition);
   box-shadow: var(--shadow-2xl);
+  overflow: hidden;
 }
+
 
 .sidebar-header {
   padding: var(--s-6) var(--s-5) var(--s-4);
@@ -545,10 +559,14 @@ body::after {
 /* ==================== */
 
 .main-content {
-  flex: 1;
+  flex: 1 1 auto;
+  /* Grow to fill space, can shrink, auto basis */
+  min-width: 0;
+  /* Allow shrinking below content size */
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* Prevent overflow */
 }
 
 .chat-view {
@@ -576,6 +594,9 @@ body::after {
   gap: var(--s-3);
   flex-wrap: wrap;
   justify-content: flex-end;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .header-info {
@@ -645,7 +666,9 @@ body::after {
   flex-direction: column;
   gap: 6px;
   padding: 8px 12px;
-  min-width: 220px;
+  min-width: 180px;
+  max-width: 220px;
+  flex-shrink: 1;
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -713,33 +736,35 @@ body::after {
   background: transparent;
 }
 
-/* Empty State – Dashboard Card Style */
+/* Empty State – Welcome Card - Premium Design */
 .welcome-state {
   margin: auto;
-  padding: 48px 32px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  padding: 48px 40px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
   text-align: center;
-  max-width: 420px;
+  max-width: 480px;
+  width: 90%;
   border: 1px solid var(--border);
 }
 
 .welcome-icon {
-  width: 72px;
-  height: 72px;
-  margin: 0 auto 20px;
-  background: var(--bg-subtle);
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 24px;
+  background: var(--accent-gradient);
   border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--accent);
+  color: white;
+  box-shadow: 0 12px 24px -8px rgba(37, 99, 235, 0.4);
 }
 
 .welcome-icon svg {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
 }
 
 .welcome-state h3 {
@@ -772,7 +797,7 @@ body::after {
   align-items: flex-start;
 }
 
-/* Messages Area */
+/* Messages Area - Fully Responsive */
 .messages-area {
   flex: 1;
   padding: var(--s-8) var(--s-6);
@@ -781,9 +806,10 @@ body::after {
   gap: var(--s-6);
   overflow-y: auto;
   scroll-behavior: smooth;
-  max-width: var(--chat-max-w);
-  margin: 0 auto;
+  max-width: 100%;
   width: 100%;
+  /* ADDED: ensures it scales properly */
+  margin: 0 auto;
 }
 
 .messages-area::before {
@@ -877,11 +903,12 @@ body::after {
 /* ==================== */
 
 .chat-input-container {
-  padding: var(--s-6) var(--s-6) var(--s-8);
-  background: transparent;
-  max-width: min(100%, 960px);
-  margin: 0 auto;
+  padding: var(--s-4) var(--s-5) var(--s-5);
+  background: var(--bg-app);
+  border-top: 1px solid var(--border);
+  max-width: 100%;
   width: 100%;
+  margin-top: auto;
 }
 
 .chat-form {
@@ -983,24 +1010,30 @@ body::after {
 /* OUTCOME PANEL        */
 /* ==================== */
 
-/* Outcome Panel */
+/* Outcome Panel - Fixed overlay, hidden by default */
 .outcome-panel {
+  position: fixed;
+  right: 0;
+  top: 0;
+  height: 100vh;
   width: var(--outcome-w);
+  max-width: 320px;
   background: linear-gradient(180deg, #FFFFFF 0%, #F4F7FC 100%);
   backdrop-filter: var(--glass-blur);
   border-left: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  transition: all var(--transition);
-  flex-shrink: 0;
-  position: relative;
+  transition: transform var(--transition), opacity var(--transition);
+  z-index: 500;
   box-shadow: var(--shadow-2xl);
+  overflow: hidden;
+  transform: translateX(100%);
+  opacity: 0;
 }
 
-.outcome-panel.collapsed {
-  transform: translateX(100%);
-  width: 0;
-  opacity: 0;
+.outcome-panel.visible {
+  transform: translateX(0);
+  opacity: 1;
 }
 
 .outcome-header {
@@ -1818,19 +1851,18 @@ body::after {
 /* Large Laptop (1440px+) */
 @media (min-width: 1440px) {
   :root {
-    --sidebar-w: 300px;
-    --outcome-w: 400px;
-    --chat-max-w: 940px;
+    --sidebar-w: 280px;
+    --outcome-w: 360px;
+    --chat-max-w: 900px;
   }
 }
 
 /* Medium Laptop (1024px - 1439px) */
 @media (max-width: 1439px) and (min-width: 1024px) {
   :root {
-    --sidebar-w: 260px;
-    --outcome-w: 320px;
+    --sidebar-w: 220px;
+    --outcome-w: 280px;
     --s-6: 20px;
-    /* Tighten horizontal spacing */
   }
 
   .messages-area {
@@ -1839,6 +1871,22 @@ body::after {
 
   .chat-header {
     padding: 0 var(--s-5);
+  }
+
+  /* Hide outcome panel by default on medium laptops */
+  .outcome-panel {
+    position: fixed;
+    right: 0;
+    top: 0;
+    height: 100vh;
+    z-index: 500;
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  .outcome-panel.visible {
+    transform: translateX(0);
+    opacity: 1;
   }
 }
 
@@ -2547,6 +2595,21 @@ body::after {
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+}
+
+/* ==================== */
+/* COMPREHENSIVE RESPONSIVE DESIGN */
+/* ==================== */
+
+/* Small screens - Adjust sidebar width */
+@media (max-width: 1023px) {
+  /* Outcome panel visibility handled via transform in earlier media query */
+  /* Do not use display:none - it breaks the toggle functionality */
+
+  .sidebar {
+    min-width: 240px;
+    max-width: 280px;
   }
 }
 
